@@ -159,37 +159,30 @@ def collate_fn(batch):
     label_lengths = torch.tensor(label_lengths)
     return padded_images, labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=25, device="mps"):
+def train_model(model, train_loader, val_loader, num_epochs=35, device="mps", max_seq_len=65):
     model = model.to(device)
-    criterion = nn.CTCLoss(blank=0).cpu()
+    criterion = nn.CrossEntropyLoss(ignore_index=0)  # Ignore padding index
     optimizer = optim.Adadelta(model.parameters(), lr=0.05)
 
     train_losses = []
     val_losses = []
 
     for epoch in range(num_epochs):
-        train_loss = 0
         model.train()
+        train_loss = 0
         for images, labels, label_lengths in train_loader:
             images, labels = images.to(device), labels.to(device)
-            
-            # Forward pass on GPU
-            outputs = model(images)  # Shape: (B, W, vocab_size)
-            log_probs = outputs.log_softmax(2).permute(1, 0, 2)  # (T, N, C)
-            
-            # Move CTC inputs to CPU
-            log_probs_cpu = log_probs.cpu().detach().requires_grad_(True)
-            labels_cpu = labels.cpu()
-            input_lengths = torch.full((images.size(0),), log_probs.size(0)).cpu()
-            label_lengths_cpu = label_lengths.cpu()
-            
-            # CTC loss computation on CPU
-            loss = criterion(log_probs_cpu, labels_cpu, input_lengths, label_lengths_cpu)
-            
-            # Backpropagation
+            optimizer.zero_grad()
+            outputs = model(images)  # Shape: (batch_size, seq_len, vocab_size)
+            # Truncate outputs to max_seq_len
+            outputs = outputs[:, :max_seq_len, :]  # Shape: (batch_size, max_seq_len, vocab_size)
+            outputs = outputs.log_softmax(2)  # Apply log_softmax for stability
+            outputs = outputs.view(-1, outputs.size(-1))  # Shape: (batch_size * max_seq_len, vocab_size)
+            labels = labels[:, :max_seq_len]  # Ensure labels match max_seq_len
+            labels = labels.view(-1)  # Shape: (batch_size * max_seq_len)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
             train_loss += loss.item()
 
         avg_train_loss = train_loss / len(train_loader)
@@ -201,9 +194,12 @@ def train_model(model, train_loader, val_loader, num_epochs=25, device="mps"):
             for images, labels, label_lengths in val_loader:
                 images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
+                outputs = outputs[:, :max_seq_len, :]
                 outputs = outputs.log_softmax(2)
-                input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
-                loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
+                outputs = outputs.view(-1, outputs.size(-1))
+                labels = labels[:, :max_seq_len]
+                labels = labels.view(-1)
+                loss = criterion(outputs, labels)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
@@ -341,7 +337,7 @@ if __name__ == "__main__":
     device = torch.device("mps" if torch.mps.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    train_model(model, train_loader, val_loader, num_epochs=25, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=35, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     results = evaluate_models(
