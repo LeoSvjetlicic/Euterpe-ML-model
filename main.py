@@ -17,105 +17,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score
 import numpy as np
 
-def calculate_metrics(predicted_tokens, true_tokens):
-    ser = 1.0 if predicted_tokens == true_tokens else 0.0
-
-    syer = levenshtein_distance(''.join(predicted_tokens), 
-                               ''.join(true_tokens)) / max(len(true_tokens), 1)
-
-    max_len = max(len(predicted_tokens), len(true_tokens))
-    p = predicted_tokens + ['<PAD>']*(max_len - len(predicted_tokens))
-    t = true_tokens + ['<PAD>']*(max_len - len(true_tokens))
-
-    precision = precision_score(t, p, average='micro', zero_division=0)
-    recall = recall_score(t, p, average='micro', zero_division=0)
-    f1 = f1_score(t, p, average='micro', zero_division=0)
-
-    return {
-        'ser': ser,
-        'syer': syer,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1
-    }
-
-def evaluate_model(model, val_loader, idx_to_token, device):
-    model.eval()
-    total_metrics = {
-        'ser': 0.0,
-        'syer': 0.0,
-        'precision': 0.0,
-        'recall': 0.0,
-        'f1': 0.0
-    }
-    total_samples = 0
-    
-    with torch.no_grad():
-        for images, labels, label_lengths in val_loader:
-            images = images.to(device)
-            labels = labels.to(device)
-            outputs = model(images)
-            
-            for i in range(images.size(0)):
-                pred = ctc_decode(outputs[:, i:i+1, :], idx_to_token)
-                target = [idx_to_token[idx.item()] 
-                         for idx in labels[i] if idx.item() != 0]
-                
-                metrics = calculate_metrics(pred, target)
-                for k in total_metrics:
-                    total_metrics[k] += metrics[k]
-                total_samples += 1
-
-    avg_metrics = {k: v/total_samples for k, v in total_metrics.items()}
-    
-    with open("evaluation.txt", "w") as f:
-        f.write("Evaluation Metrics:\n")
-        f.write(f"- Sequence Error Rate: {avg_metrics['ser']*100:.2f}%\n")
-        f.write(f"- Symbol Error Rate: {avg_metrics['syer']*100:.2f}%\n")
-        f.write(f"- Token Precision: {avg_metrics['precision']*100:.2f}%\n")
-        f.write(f"- Token Recall: {avg_metrics['recall']*100:.2f}%\n")
-        f.write(f"- Token F1 Score: {avg_metrics['f1']*100:.2f}%\n")
-    
-    return avg_metrics
-
 def load_vocabulary_from_file(vocab_path):
     with open(vocab_path, 'r') as f:
         token_to_idx = json.load(f)
     vocab = sorted([token for token in token_to_idx if token != "<BLANK>"])
     idx_to_token = {int(idx): token for token, idx in token_to_idx.items()}
     return vocab, token_to_idx, idx_to_token
-
-def calculate_cer(predicted, target):
-    """Character Error Rate (CER) using Levenshtein distance"""
-    return levenshtein_distance(''.join(predicted), ''.join(target)) / max(len(target), 1)
-
-# def calculate_metrics(predicted_tokens, true_tokens):
-#     cer = calculate_cer(predicted_tokens, true_tokens)
-#     sequence_accuracy = 1.0 if predicted_tokens == true_tokens else 0.0
-#     return cer, sequence_accuracy
-
-# def evaluate_model(model, val_loader, idx_to_token, device):
-#     model.eval()
-#     total_cer, total_seq_acc, total = 0.0, 0.0, 0
-#     with torch.no_grad():
-#         for images, labels, label_lengths in val_loader:
-#             images = images.to(device)
-#             labels = labels.to(device)
-#             outputs = model(images)
-#             for i in range(images.size(0)):
-#                 pred = ctc_decode(outputs[:, i:i+1, :], idx_to_token)  # Keep batch dimension
-#                 target = [idx_to_token[idx.item()] for idx in labels[i] if idx.item() != 0]
-#                 cer, seq_acc = calculate_metrics(pred, target)
-#                 total_cer += cer
-#                 total_seq_acc += seq_acc
-#                 total += 1
-#     avg_cer = total_cer / total
-#     avg_seq_acc = total_seq_acc / total
-#     # Write to file
-#     with open("evaluation.txt", "w") as f:
-#         f.write(f"Validation CER: {avg_cer:.4f}\n")
-#         f.write(f"Validation Sequence Accuracy: {avg_seq_acc:.4f}\n")
-
 
 def random_affine(img):
     if random.random() < 0.01: 
@@ -158,6 +65,7 @@ class MusicScoreDataset(Dataset):
             self.token_to_idx = {token: idx + 1 for idx, token in enumerate(self.vocab)}
             self.token_to_idx["<BLANK>"] = 0
         self.idx_to_token = {idx: token for token, idx in self.token_to_idx.items()}
+
     def build_vocab(self):
         vocab = set()
         for label_path in self.label_paths:
@@ -165,8 +73,10 @@ class MusicScoreDataset(Dataset):
                 tokens = f.read().strip().split()
                 vocab.update(tokens)
         return sorted(list(vocab))
+    
     def __len__(self):
         return len(self.image_paths)
+    
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
@@ -206,26 +116,24 @@ class CRNN(nn.Module):
         super(CRNN, self).__init__()
 
         self.cnn = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),
+            nn.Conv2d(1, 32, kernel_size=3, padding=0),
             nn.MaxPool2d(2, 2), 
 
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, padding=0),
             nn.MaxPool2d(2, 2), 
 
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, padding=0),
             nn.MaxPool2d(2, 2), 
 
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.Conv2d(128, 256, kernel_size=3, padding=0),
             nn.MaxPool2d(2, 2), 
         )
 
-        # After conv layers, height is reduced from 128 to 8
-        # So input to RNN is (W/16, 256*8) per timestep
         # Ovo mi nije jasnoooo
-        self.rnn_input_size = 256 * 8
+        self.rnn_input_size = 256 * 6
         self.rnn = nn.LSTM(input_size=self.rnn_input_size, hidden_size=256, num_layers=2, batch_first=True, bidirectional=True)
 
-        self.fc = nn.Linear(256 * 2, vocab_size)  # bidirectional, so 2x hidden size
+        self.fc = nn.Linear(256 * 2, vocab_size)
 
     def forward(self, x):
         x = self.cnn(x)  # Shape: (B, C, H=8, W/16)
@@ -251,26 +159,37 @@ def collate_fn(batch):
     label_lengths = torch.tensor(label_lengths)
     return padded_images, labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=13, device="mps"):
+def train_model(model, train_loader, val_loader, num_epochs=25, device="mps"):
     model = model.to(device)
-    criterion = nn.CTCLoss(blank=0, zero_infinity=False)
-    optimizer = optim.Adadelta(model.parameters(), lr=0.8)
+    criterion = nn.CTCLoss(blank=0).cpu()
+    optimizer = optim.Adadelta(model.parameters(), lr=0.05)
 
     train_losses = []
     val_losses = []
 
     for epoch in range(num_epochs):
-        model.train()
         train_loss = 0
+        model.train()
         for images, labels, label_lengths in train_loader:
             images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad()
-            outputs = model(images)  # Shape: (batch_size, seq_len, vocab_size)
-            outputs = outputs.log_softmax(2)  # Shape: (batch_size, seq_len, vocab_size)
-            input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
-            loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
+            
+            # Forward pass on GPU
+            outputs = model(images)  # Shape: (B, W, vocab_size)
+            log_probs = outputs.log_softmax(2).permute(1, 0, 2)  # (T, N, C)
+            
+            # Move CTC inputs to CPU
+            log_probs_cpu = log_probs.cpu().detach().requires_grad_(True)
+            labels_cpu = labels.cpu()
+            input_lengths = torch.full((images.size(0),), log_probs.size(0)).cpu()
+            label_lengths_cpu = label_lengths.cpu()
+            
+            # CTC loss computation on CPU
+            loss = criterion(log_probs_cpu, labels_cpu, input_lengths, label_lengths_cpu)
+            
+            # Backpropagation
             loss.backward()
             optimizer.step()
+            optimizer.zero_grad()
             train_loss += loss.item()
 
         avg_train_loss = train_loss / len(train_loader)
@@ -297,37 +216,6 @@ def train_model(model, train_loader, val_loader, num_epochs=13, device="mps"):
         os.makedirs(checkpoint_dir, exist_ok=True)
         torch.save(model.state_dict(), f"{checkpoint_dir}/crnn_epoch_{epoch+1}.pth")
 
-    plt.figure(figsize=(13, 5))
-    plt.plot(range(1, num_epochs+1), train_losses, label='Train Loss')
-    plt.plot(range(1, num_epochs+1), val_losses, label='Validation Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.title('Training and Validation Loss Curves')
-    plt.legend()
-    plt.grid(True)
-    plt.savefig("loss_curve.png", dpi=200)
-    plt.close()
-def ctc_decode(logits, idx_to_token):
-    if logits.dim() == 2:
-        logits = logits.unsqueeze(1) 
-    
-    logits = logits.permute(1, 0, 2)
-    
-    output_indices = logits.argmax(dim=2)[0].cpu().numpy()
-    decoded = []
-    prev_idx = None
-    for idx in output_indices:
-        if idx != prev_idx and idx != 0:
-            decoded.append(idx_to_token[idx])
-        prev_idx = idx
-    return decoded
-
-def load_vocabulary(vocab_path):
-    with open(vocab_path, 'r') as f:
-        token_to_idx = json.load(f)
-    vocab = sorted([token for token, idx in token_to_idx.items() if token != "<BLANK>"])
-    idx_to_token = {int(idx): token for token, idx in token_to_idx.items()}
-    return vocab, idx_to_token
 def evaluate_models(model_class, test_split, model_folder, device,vocab, batch_size=16):
     test_loader = DataLoader(
         test_split,
@@ -336,11 +224,9 @@ def evaluate_models(model_class, test_split, model_folder, device,vocab, batch_s
         collate_fn=collate_fn
     )
     
-    # Initialize lists to store accuracies for all models
     token_accuracies = []
     sequence_accuracies = []
     
-    # Get list of model files in the folder
     model_files = [f for f in os.listdir(model_folder) if f.endswith('.pth')]
     
     if not model_files:
@@ -350,7 +236,6 @@ def evaluate_models(model_class, test_split, model_folder, device,vocab, batch_s
     for model_file in model_files:
         print(f"Evaluating model: {model_file}")
         
-        # Instantiate a new model
         model = model_class(vocab_size=len(vocab) + 1)
         model.load_state_dict(torch.load(os.path.join(model_folder, model_file), map_location=device))
         model.to(device)
@@ -366,23 +251,21 @@ def evaluate_models(model_class, test_split, model_folder, device,vocab, batch_s
                 images = images.to(device)
                 targets = targets.to(device)
                 
-                # Forward pass
-                outputs = model(images)  # Shape: (batch_size, max_seq_len, vocab_size)
+                outputs = model(images)
                 
-                # Get predicted token indices
-                _, predicted = torch.max(outputs, dim=2)  # Shape: (batch_size, max_seq_len)
+                _, predicted = torch.max(outputs, dim=2)  
                 
-                # Compare predictions with targets
                 for i in range(images.size(0)):
                     seq_len = lengths[i]
                     pred_seq = predicted[i, :seq_len]
                     target_seq = targets[i, :seq_len]
                     
-                    # Token accuracy
                     correct_tokens += (pred_seq == target_seq).sum().item()
                     total_tokens += seq_len
-                    
-                    # Sequence accuracy
+                    print("\nPREDICTED\n")
+                    print(pred_seq)
+                    print("\nPREDICTED\n")
+                    print(target_seq)
                     if torch.equal(pred_seq, target_seq):
                         correct_sequences += 1
                     total_sequences += 1
@@ -412,11 +295,14 @@ if __name__ == "__main__":
     data_package_aa = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_aa" 
     data_package_ab = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab" 
 
-    train_dataset = MusicScoreDataset(data_package_aa, transform=None, num_samples=None)
-    val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=train_dataset.vocab, num_samples=None)
+    VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab_save_path.json" 
+    vocab = load_vocabulary_from_file(VOCAB_PATH)[0]
+
+    train_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
+    val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
     combined_dataset = ConcatDataset([train_dataset, val_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.20 * total_samples)
+    test_size = int(0.15 * total_samples)
     train_and_validation_size = total_samples - test_size
     train_size = int(0.8 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
@@ -443,10 +329,10 @@ if __name__ == "__main__":
     val_loader = DataLoader(
         val_split,
         batch_size=16,
-        shuffle=False,
+        shuffle=True,
         collate_fn=collate_fn
     )
-    print(f"Training samples: {len(test_split)}")
+    print(f"Test samples: {len(test_split)}")
     print(f"Training samples: {len(train_split)}")
     print(f"Validation samples: {len(val_split)}")
     print(f"Vocabulary size: {len(train_dataset.vocab)}")
@@ -455,7 +341,7 @@ if __name__ == "__main__":
     device = torch.device("mps" if torch.mps.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    train_model(model, train_loader, val_loader, num_epochs=13, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=25, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     results = evaluate_models(
