@@ -1,0 +1,2 @@
+Dobar je. 
+Mislim da je cak 1. epocha najbolja jer nije overfittana

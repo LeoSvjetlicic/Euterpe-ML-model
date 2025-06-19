@@ -1,0 +1,6 @@
+Isto dobar ali nije presavrsen, tocniji od onoga ali nije blizu 100 posto
+
+crnn_epoch_1 je najbolji ja bih rekao, jer nije overfittan
+
+cak je crnn_epoch_3 mozd, samo za sve se mora paziti na visinu slike 
+(trebalo bi kretati od piksela najnize note, jer u suprotnome ne pogada visinu tocnu)

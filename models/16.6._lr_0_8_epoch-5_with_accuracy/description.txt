@@ -1,0 +1,19 @@
+Epoch 1/5, Train Loss: 4.4626, Val Loss: 3.7326
+Epoch 2/5, Train Loss: 2.2768, Val Loss: 1.7133
+Epoch 3/5, Train Loss: 1.6275, Val Loss: 1.4577
+Epoch 4/5, Train Loss: 1.5105, Val Loss: 1.5127
+Epoch 5/5, Train Loss: 1.5057, Val Loss: 1.9056
+Evaluating model: crnn_epoch_5.pth
+Model crnn_epoch_5.pth - Token Accuracy: 9.04%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_4.pth
+Model crnn_epoch_4.pth - Token Accuracy: 9.66%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 9.66%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_2.pth
+Model crnn_epoch_2.pth - Token Accuracy: 8.99%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_1.pth
+Model crnn_epoch_1.pth - Token Accuracy: 5.70%, Sequence Accuracy: 0.00%
+
+Summary of Evaluation:
+Average Token Accuracy across 5 models: 8.61%
+Average Sequence Accuracy across 5 models: 0.00%

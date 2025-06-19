@@ -1,0 +1,5 @@
+Validation CER: 12.0756
+Validation Sequence Accuracy: 0.0000
+
+
+IMHO doesnt work at all
