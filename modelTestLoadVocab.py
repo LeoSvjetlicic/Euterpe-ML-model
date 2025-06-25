@@ -26,9 +26,9 @@ def ctc_decode(token_list):
     return decoded
 
 # ===== CONFIGURATION =====
-MODEL_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/models/withMatplotlib_TRY_distortion_epochs_10_LR-03/crnn_epoch_5.pth"
+MODEL_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/models/25.6.lr 0.05_ok_but_needs_more_epochs/crnn_epoch_10.pth"
 IMAGE_PATH = "/Users/leosvjetlicic/Desktop/testagain.png"
-VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab_save_path"
+VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab_save_path.json"
 # =========================
 
 # Load vocabulary

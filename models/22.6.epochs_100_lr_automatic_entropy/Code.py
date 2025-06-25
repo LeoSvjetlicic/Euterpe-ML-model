@@ -16,10 +16,6 @@ from Levenshtein import distance as levenshtein_distance
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score
 import numpy as np
-from torchvision.utils import save_image
-from torch.utils.data import Subset
-import os
-from pathlib import Path
 
 def load_vocabulary_from_file(vocab_path):
     with open(vocab_path, 'r') as f:
@@ -29,6 +25,11 @@ def load_vocabulary_from_file(vocab_path):
     return vocab, token_to_idx, idx_to_token
 
 def random_affine(img):
+    if random.random() < 0.01: 
+        angle = random.choice([180, 0])
+    else:
+        angle = random.uniform(-15, 15)
+
     translate = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05))  
 
     scale = random.uniform(0.95, 1.05)
@@ -37,17 +38,9 @@ def random_affine(img):
 
     img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0) 
     img_tensor = TF.to_pil_image(img_tensor)
-    img_tensor = TF.affine(img_tensor, angle=0, translate=(int(translate[0]*img.shape[1]), int(translate[1]*img.shape[0])), scale=scale, shear=shear, fill=0)
+    img_tensor = TF.affine(img_tensor, angle=angle, translate=(int(translate[0]*img.shape[1]), int(translate[1]*img.shape[0])), scale=scale, shear=shear, fill=0)
     img_tensor = TF.to_tensor(img_tensor).squeeze(0) 
     return img_tensor.numpy()
-
-def add_gaussian_noise(img, mean=0, std=0.05):
-    """Add Gaussian noise to an image."""
-    noise = np.random.normal(mean, std, img.shape).astype(np.float32)
-    noisy_img = img + noise
-    noisy_img = np.clip(noisy_img, 0, 1) 
-    
-    return noisy_img
 
 class MusicScoreDataset(Dataset):
     def __init__(self, image_dir, transform=None, vocab=None, max_seq_len=65, num_samples=None):
@@ -91,22 +84,20 @@ class MusicScoreDataset(Dataset):
             raise ValueError(f"Image not found: {img_path}")
         img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
         img = img / 255.0 
-        
+
         original_height, original_width = img.shape
         if original_height == 0 or original_width == 0:
             raise ValueError(f"Invalid image dimensions: {original_height}x{original_width} at {img_path}")
+        aspect_ratio = original_width / original_height
+        new_height = 128
+        new_width = max(1, int(aspect_ratio * new_height)) 
+        img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
         if self.transform:
             img = self.transform(img)
         else:
             if random.random() < 0.3:
                 img = random_affine(img)
-        aspect_ratio = original_width / original_height
-        new_height = 128
-        new_width = max(1, int(aspect_ratio * new_height)) 
-        img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-        # img = add_gaussian_noise(img, mean=0, std=0.05)
-        
         img = torch.tensor(img, dtype=torch.float32).unsqueeze(0) 
         if self.transform:
             img = self.transform(img)
@@ -115,8 +106,10 @@ class MusicScoreDataset(Dataset):
         with open(label_path, "r") as f:
             tokens = f.read().strip().split()
         label = [self.token_to_idx[token] for token in tokens if token in self.token_to_idx]
-        label = torch.tensor(label, dtype=torch.int32)
-        return img, label, len(label)
+        label = label + [0] * (self.max_seq_len - len(label)) 
+        label = torch.tensor(label[:self.max_seq_len], dtype=torch.int32)
+
+        return img, label, len(tokens)
 
 class CRNN(nn.Module):
     def __init__(self, vocab_size):
@@ -162,17 +155,14 @@ def collate_fn(batch):
         padded_img = F.pad(img, (0, pad_width, 0, pad_height), mode='constant', value=0)
         padded_images.append(padded_img)
     padded_images = torch.stack(padded_images)
-    max_label_len = max(len(label) for label in labels)
-    padded_labels = torch.zeros(len(labels), max_label_len, dtype=torch.int32)
-    for i, label in enumerate(labels):
-        padded_labels[i, :len(label)] = label
+    labels = torch.stack(labels)
     label_lengths = torch.tensor(label_lengths)
-    return padded_images, padded_labels, label_lengths
+    return padded_images, labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", max_seq_len=65):
+def train_model(model, train_loader, val_loader, num_epochs=35, device="mps", max_seq_len=65):
     model = model.to(device)
-    criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    optimizer = torch.optim.Adadelta(model.parameters(), lr=0.05)
+    criterion = nn.CrossEntropyLoss(ignore_index=0) 
+    optimizer = torch.optim.Adadelta(model.parameters())
 
     train_losses = []
     val_losses = []
@@ -181,12 +171,16 @@ def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", m
         model.train()
         train_loss = 0
         for images, labels, label_lengths in train_loader:
-            images, labels, label_lengths = images.to(device), labels.to(device), label_lengths.to(device)
+            images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             outputs = model(images)  # Shape: (batch_size, seq_len, vocab_size)
-            outputs = outputs.log_softmax(2)  # Log probabilities
-            input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
-            loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
+            # Truncate outputs to max_seq_len
+            outputs = outputs[:, :max_seq_len, :]  # Shape: (batch_size, max_seq_len, vocab_size)
+            outputs = outputs.log_softmax(2)  # Apply log_softmax for stability
+            outputs = outputs.view(-1, outputs.size(-1))  # Shape: (batch_size * max_seq_len, vocab_size)
+            labels = labels[:, :max_seq_len]  # Ensure labels match max_seq_len
+            labels = labels.view(-1)  # Shape: (batch_size * max_seq_len)
+            loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
@@ -198,11 +192,14 @@ def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", m
         val_loss = 0
         with torch.no_grad():
             for images, labels, label_lengths in val_loader:
-                images, labels, label_lengths = images.to(device), labels.to(device), label_lengths.to(device)
+                images, labels = images.to(device), labels.to(device)
                 outputs = model(images)
+                outputs = outputs[:, :max_seq_len, :]
                 outputs = outputs.log_softmax(2)
-                input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
-                loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
+                outputs = outputs.view(-1, outputs.size(-1))
+                labels = labels[:, :max_seq_len]
+                labels = labels.view(-1)
+                loss = criterion(outputs, labels)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
@@ -234,7 +231,8 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
         sequence_accuracies = []
         
         model_files = [
-            f for f in os.listdir(model_folder) if f.endswith('.pth')
+            f for f in os.listdir(model_folder)
+            if f.endswith('.pth') and '3' in f 
         ]
         
         if not model_files:
@@ -293,36 +291,6 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
         "avg_sequence_accuracy": avg_sequence_accuracy
     }
 
-def save_normalized_images(dataset, output_path, num_images=50):
-    """
-    Saves `num_images` normalized images from a PyTorch dataset to disk.
-
-    Args:
-        dataset (Dataset): Your instance of MusicScoreDataset.
-        output_path (str or Path): Directory to save the images.
-        num_images (int): Number of images to save.
-    """
-    output_path = Path(output_path)
-    output_path.mkdir(parents=True, exist_ok=True)
-
-    # Pick a fixed subset (first N samples)
-    indices = list(range(min(num_images, len(dataset))))
-    subset = Subset(dataset, indices)
-
-    for i, (img, _, _) in enumerate(subset):
-        # Ensure image is a 3D tensor: (1, H, W)
-        if img.ndim == 2:
-            img = img.unsqueeze(0)
-        elif img.ndim == 3 and img.shape[0] != 1:
-            raise ValueError("Expected a single-channel image.")
-
-        # Save image
-        file_path = output_path / f"image_{i:03d}.png"
-        save_image(img, str(file_path))
-
-    print(f"✅ Saved {len(subset)} normalized images to: {output_path}")
-
-
 if __name__ == "__main__":
     data_package_aa = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_aa" 
     data_package_ab = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab" 
@@ -334,7 +302,7 @@ if __name__ == "__main__":
     val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
     combined_dataset = ConcatDataset([train_dataset, val_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.15 * total_samples)
+    test_size = int(0.2 * total_samples)
     train_and_validation_size = total_samples - test_size
     train_size = int(0.85 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
@@ -370,14 +338,12 @@ if __name__ == "__main__":
     print(f"Vocabulary size: {len(train_dataset.vocab)}")
 
     model = CRNN(vocab_size=len(train_dataset.vocab) + 1)
-    device = torch.device("cpu")
+    device = torch.device("mps" if torch.mps.is_available() else "cpu")
     print(f"Using device: {device}")
-    # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    train_model(model, train_loader, val_loader, num_epochs=10, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=100, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
-    
     results = evaluate_models(
         model_class=CRNN,
         test_split=test_split,

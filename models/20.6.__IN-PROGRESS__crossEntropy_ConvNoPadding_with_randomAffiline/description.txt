@@ -1,0 +1,26 @@
+Nakon treniranja modela, proces se ugasio -> nisu ostale spremljene testne vrijednosti 
+pa sam povecao split da bude skoro cijeli samo za testiranje, ali su svakako losi iako se preklapaju s vrijednostima na kojima su trenirani.
+
+
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 20.90%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_23.pth
+Model crnn_epoch_23.pth - Token Accuracy: 33.31%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_35.pth
+Model crnn_epoch_35.pth - Token Accuracy: 44.24%, Sequence Accuracy: 0.02%
+Evaluating model: crnn_epoch_34.pth
+Model crnn_epoch_34.pth - Token Accuracy: 41.46%, Sequence Accuracy: 0.02%
+Evaluating model: crnn_epoch_30.pth
+Model crnn_epoch_30.pth - Token Accuracy: 36.06%, Sequence Accuracy: 0.01%
+Evaluating model: crnn_epoch_31.pth
+Model crnn_epoch_31.pth - Token Accuracy: 41.32%, Sequence Accuracy: 0.02%
+Evaluating model: crnn_epoch_33.pth
+Model crnn_epoch_33.pth - Token Accuracy: 42.09%, Sequence Accuracy: 0.02%
+Evaluating model: crnn_epoch_32.pth
+Model crnn_epoch_32.pth - Token Accuracy: 42.18%, Sequence Accuracy: 0.03%
+Evaluating model: crnn_epoch_13.pth
+Model crnn_epoch_13.pth - Token Accuracy: 28.30%, Sequence Accuracy: 0.00%
+
+Summary of Evaluation:
+Average Token Accuracy across 9 models: 36.65%
+Average Sequence Accuracy across 9 models: 0.01%

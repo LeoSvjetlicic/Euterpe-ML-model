@@ -1,0 +1,142 @@
+Epoch 1/100, Train Loss: 4.3561, Val Loss: 4.3378
+Epoch 2/100, Train Loss: 4.3080, Val Loss: 4.3231
+Epoch 3/100, Train Loss: 4.2831, Val Loss: 4.3023
+Epoch 4/100, Train Loss: 4.3350, Val Loss: 4.3763
+Epoch 5/100, Train Loss: 4.3373, Val Loss: 4.3691
+Epoch 6/100, Train Loss: 4.3370, Val Loss: 4.3621
+Epoch 7/100, Train Loss: 4.3375, Val Loss: 4.3279
+Epoch 8/100, Train Loss: 4.3373, Val Loss: 4.3462
+Epoch 9/100, Train Loss: 4.3385, Val Loss: 4.3766
+Epoch 10/100, Train Loss: 4.3390, Val Loss: 4.3577
+Epoch 11/100, Train Loss: 4.3390, Val Loss: 4.3527
+Epoch 12/100, Train Loss: 4.3387, Val Loss: 4.3691
+Epoch 13/100, Train Loss: 4.3394, Val Loss: 4.3964
+Epoch 14/100, Train Loss: 4.3402, Val Loss: 4.3570
+Epoch 15/100, Train Loss: 4.3398, Val Loss: 4.3512
+Epoch 16/100, Train Loss: 4.3406, Val Loss: 4.3935
+Epoch 17/100, Train Loss: 4.3403, Val Loss: 4.3707
+Epoch 18/100, Train Loss: 4.3414, Val Loss: 4.3645
+Epoch 19/100, Train Loss: 4.3414, Val Loss: 4.3916
+Epoch 20/100, Train Loss: 4.3428, Val Loss: 4.3758
+Epoch 21/100, Train Loss: 4.3432, Val Loss: 4.3482
+Epoch 22/100, Train Loss: 4.3435, Val Loss: 4.3676
+Epoch 23/100, Train Loss: 4.3433, Val Loss: 4.3411
+Epoch 24/100, Train Loss: 4.3435, Val Loss: 4.3729
+Epoch 25/100, Train Loss: 4.3454, Val Loss: 4.3670
+Epoch 26/100, Train Loss: 4.3442, Val Loss: 4.3729
+Epoch 27/100, Train Loss: 4.3455, Val Loss: 4.3675
+Epoch 28/100, Train Loss: 4.3472, Val Loss: 4.3785
+Epoch 29/100, Train Loss: 4.3460, Val Loss: 4.3580
+Epoch 30/100, Train Loss: 4.3468, Val Loss: 4.4043
+Epoch 31/100, Train Loss: 4.3479, Val Loss: 4.3690
+Epoch 32/100, Train Loss: 4.3482, Val Loss: 4.3753
+Epoch 33/100, Train Loss: 4.3484, Val Loss: 4.3676
+Epoch 34/100, Train Loss: 4.3495, Val Loss: 4.3912
+Epoch 35/100, Train Loss: 4.3488, Val Loss: 4.3569
+Epoch 36/100, Train Loss: 4.3504, Val Loss: 4.3767
+Epoch 37/100, Train Loss: 4.3508, Val Loss: 4.3716
+Epoch 38/100, Train Loss: 4.3501, Val Loss: 4.3462
+Epoch 39/100, Train Loss: 4.3510, Val Loss: 4.4050
+Epoch 40/100, Train Loss: 4.3522, Val Loss: 4.3643
+Epoch 41/100, Train Loss: 4.3527, Val Loss: 4.3972
+Epoch 42/100, Train Loss: 4.3535, Val Loss: 4.3682
+Epoch 43/100, Train Loss: 4.3534, Val Loss: 4.4284
+Epoch 44/100, Train Loss: 4.3537, Val Loss: 4.3687
+Epoch 45/100, Train Loss: 4.3535, Val Loss: 4.3955
+Epoch 46/100, Train Loss: 4.3535, Val Loss: 4.4342
+Epoch 47/100, Train Loss: 4.3549, Val Loss: 4.3699
+Epoch 48/100, Train Loss: 4.3539, Val Loss: 4.3974
+Epoch 49/100, Train Loss: 4.3549, Val Loss: 4.3904
+Epoch 50/100, Train Loss: 4.3560, Val Loss: 4.3969
+Epoch 51/100, Train Loss: 4.3568, Val Loss: 4.3889
+Epoch 52/100, Train Loss: 4.3582, Val Loss: 4.3684
+Epoch 53/100, Train Loss: 4.3584, Val Loss: 4.3972
+Epoch 54/100, Train Loss: 4.3589, Val Loss: 4.3856
+Epoch 55/100, Train Loss: 4.3605, Val Loss: 4.4164
+Epoch 56/100, Train Loss: 4.3617, Val Loss: 4.3614
+Epoch 57/100, Train Loss: 4.3612, Val Loss: 4.3829
+Epoch 58/100, Train Loss: 4.3631, Val Loss: 4.3626
+Epoch 59/100, Train Loss: 4.3635, Val Loss: 4.3897
+Epoch 60/100, Train Loss: 4.3645, Val Loss: 4.4674
+Epoch 61/100, Train Loss: 4.3652, Val Loss: 4.3867
+Epoch 62/100, Train Loss: 4.3657, Val Loss: 4.3784
+Epoch 63/100, Train Loss: 4.3670, Val Loss: 4.4130
+Epoch 64/100, Train Loss: 4.3677, Val Loss: 4.4841
+Epoch 65/100, Train Loss: 4.3690, Val Loss: 4.5137
+Epoch 66/100, Train Loss: 4.3699, Val Loss: 4.4104
+Epoch 67/100, Train Loss: 4.3694, Val Loss: 4.4421
+Epoch 68/100, Train Loss: 4.3677, Val Loss: 4.3885
+Epoch 69/100, Train Loss: 4.3671, Val Loss: 4.4108
+Epoch 70/100, Train Loss: 4.3688, Val Loss: 4.4392
+Epoch 71/100, Train Loss: 4.3700, Val Loss: 4.4463
+Epoch 72/100, Train Loss: 4.3701, Val Loss: 4.3948
+Epoch 73/100, Train Loss: 4.3724, Val Loss: 4.4184
+Epoch 74/100, Train Loss: 4.3717, Val Loss: 4.4114
+Epoch 75/100, Train Loss: 4.3716, Val Loss: 4.4482
+Epoch 76/100, Train Loss: 4.3715, Val Loss: 4.4829
+Epoch 77/100, Train Loss: 4.3731, Val Loss: 4.5129
+Epoch 78/100, Train Loss: 4.3737, Val Loss: 4.4266
+Epoch 79/100, Train Loss: 4.3742, Val Loss: 4.5130
+Epoch 80/100, Train Loss: 4.3753, Val Loss: 4.4958
+Epoch 81/100, Train Loss: 4.3779, Val Loss: 4.5442
+Epoch 82/100, Train Loss: 4.3772, Val Loss: 4.5177
+Epoch 83/100, Train Loss: 4.3776, Val Loss: 4.4562
+Epoch 84/100, Train Loss: 4.3784, Val Loss: 4.4557
+Epoch 85/100, Train Loss: 4.3816, Val Loss: 4.4116
+Epoch 86/100, Train Loss: 4.3826, Val Loss: 4.4823
+Epoch 87/100, Train Loss: 4.3826, Val Loss: 4.3974
+Epoch 88/100, Train Loss: 4.3795, Val Loss: 4.4292
+Epoch 89/100, Train Loss: 4.3795, Val Loss: 4.4512
+Epoch 90/100, Train Loss: 4.3799, Val Loss: 4.4400
+Epoch 91/100, Train Loss: 4.3812, Val Loss: 4.4671
+Epoch 92/100, Train Loss: 4.3819, Val Loss: 4.4745
+Epoch 93/100, Train Loss: 4.3831, Val Loss: 4.4297
+Epoch 94/100, Train Loss: 4.3829, Val Loss: 4.4298
+Epoch 95/100, Train Loss: 4.3847, Val Loss: 4.4260
+Epoch 96/100, Train Loss: 4.3855, Val Loss: 4.4703
+Epoch 97/100, Train Loss: 4.3839, Val Loss: 4.4239
+Epoch 98/100, Train Loss: 4.3867, Val Loss: 4.4244
+Epoch 99/100, Train Loss: 4.3868, Val Loss: 4.4141
+Epoch 100/100, Train Loss: 4.3874, Val Loss: 4.5890
+
+
+
+Evaluating model: crnn_epoch_83.pth
+Model crnn_epoch_83.pth - Token Accuracy: 18.77%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_43.pth
+Model crnn_epoch_43.pth - Token Accuracy: 18.69%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 19.55%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_93.pth
+Model crnn_epoch_93.pth - Token Accuracy: 19.53%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_36.pth
+Model crnn_epoch_36.pth - Token Accuracy: 18.03%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_37.pth
+Model crnn_epoch_37.pth - Token Accuracy: 19.54%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_23.pth
+Model crnn_epoch_23.pth - Token Accuracy: 19.54%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_35.pth
+Model crnn_epoch_35.pth - Token Accuracy: 19.77%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_34.pth
+Model crnn_epoch_34.pth - Token Accuracy: 19.37%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_30.pth
+Model crnn_epoch_30.pth - Token Accuracy: 19.59%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_31.pth
+Model crnn_epoch_31.pth - Token Accuracy: 19.59%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_33.pth
+Model crnn_epoch_33.pth - Token Accuracy: 18.80%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_32.pth
+Model crnn_epoch_32.pth - Token Accuracy: 18.94%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_39.pth
+Model crnn_epoch_39.pth - Token Accuracy: 19.59%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_38.pth
+Model crnn_epoch_38.pth - Token Accuracy: 18.96%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_13.pth
+Model crnn_epoch_13.pth - Token Accuracy: 19.40%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_63.pth
+Model crnn_epoch_63.pth - Token Accuracy: 18.84%, Sequence Accuracy: 0.00%
+
+Summary of Evaluation:
+Average Token Accuracy across 17 models: 19.21%
+Average Sequence Accuracy across 17 models: 0.00%
+
