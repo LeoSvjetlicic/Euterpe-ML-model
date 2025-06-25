@@ -172,7 +172,7 @@ def collate_fn(batch):
 def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", max_seq_len=65):
     model = model.to(device)
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    optimizer = torch.optim.Adadelta(model.parameters(), lr=0.05)
+    optimizer = torch.optim.Adadelta(model.parameters())
 
     train_losses = []
     val_losses = []
@@ -215,17 +215,34 @@ def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", m
         os.makedirs(checkpoint_dir, exist_ok=True)
         torch.save(model.state_dict(), f"{checkpoint_dir}/crnn_epoch_{epoch+1}.pth")
 
+def decode_sequence(tensor_seq, idx_to_char):
+    chars = [idx_to_char[idx.item()] for idx in tensor_seq]
+    return ''.join(chars)
+
+def ctc_decode_idx(token_list, blank_token=0):
+    """
+    Collapse consecutive duplicates and remove <BLANK> tokens for CTC decoding.
+    Operates directly on integer token indices.
+    """
+    decoded = []
+    prev_token = None
+    for token in token_list:
+        if token != prev_token and token != blank_token:
+            decoded.append(token)
+        prev_token = token
+    return decoded
+
 def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_size=16):
-    from datetime import datetime
     output_file = os.path.join(model_folder, "description.txt")
     
     with open(output_file, "w") as fdesc:
         def log(msg):
+            print(msg)
             fdesc.write(msg + "\n")
 
         test_loader = DataLoader(
             test_split,
-            batch_size=batch_size,
+            batch_size=1,
             shuffle=False,
             collate_fn=collate_fn
         )
@@ -234,7 +251,7 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
         sequence_accuracies = []
         
         model_files = [
-            f for f in os.listdir(model_folder) if f.endswith('.pth')
+            f for f in os.listdir(model_folder) if f.endswith('13.pth')
         ]
         
         if not model_files:
@@ -258,19 +275,26 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
                 for images, targets, lengths in test_loader:
                     images = images.to(device)
                     targets = targets.to(device)
-                    
-                    outputs = model(images)
-                    _, predicted = torch.max(outputs, dim=2)
-                    
+
+                    output = model(images)  # [B, T, C]
+                    predicted = output.argmax(dim=2)[0].cpu().numpy()
+
                     for i in range(images.size(0)):
                         seq_len = lengths[i]
-                        pred_seq = predicted[i, :seq_len]
-                        target_seq = targets[i, :seq_len]
-                        
-                        correct_tokens += (pred_seq == target_seq).sum().item()
-                        total_tokens += seq_len
-                        
-                        if torch.equal(pred_seq, target_seq):
+                        target_seq = targets[i, :seq_len].cpu().tolist()
+
+                        decoded_pred_seq = ctc_decode_idx(predicted)
+
+                        # print(f"seq_len: {seq_len}")
+                        print(f"raw_pred_seq: {predicted}")
+                        # print(f"decoded_pred_seq: {decoded_pred_seq}")
+                        print(f"target_seq: {target_seq}")
+
+                        min_len = min(len(decoded_pred_seq), len(target_seq))
+                        correct_tokens += sum(p == t for p, t in zip(decoded_pred_seq[:min_len], target_seq[:min_len]))
+                        total_tokens += len(target_seq)
+
+                        if decoded_pred_seq == target_seq:
                             correct_sequences += 1
                         total_sequences += 1
             
@@ -327,14 +351,14 @@ if __name__ == "__main__":
     data_package_aa = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_aa" 
     data_package_ab = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab" 
 
-    VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab_save_path.json" 
+    VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab.json" 
     vocab = load_vocabulary_from_file(VOCAB_PATH)[0]
 
     train_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
     val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
     combined_dataset = ConcatDataset([train_dataset, val_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.15 * total_samples)
+    test_size = int(0.20 * total_samples)
     train_and_validation_size = total_samples - test_size
     train_size = int(0.85 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
@@ -374,7 +398,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    train_model(model, train_loader, val_loader, num_epochs=10, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=15, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
