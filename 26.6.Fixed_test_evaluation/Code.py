@@ -398,7 +398,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    # train_model(model, train_loader, val_loader, num_epochs=15, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=15, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
