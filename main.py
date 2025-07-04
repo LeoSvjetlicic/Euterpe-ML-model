@@ -114,15 +114,19 @@ class CRNN(nn.Module):
 
         self.cnn = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.Conv2d(32, 64, kernel_size=3),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.Conv2d(64, 128, kernel_size=3),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.Conv2d(128, 256, kernel_size=3),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
         )
 
@@ -346,7 +350,7 @@ if __name__ == "__main__":
 
     combined_dataset = ConcatDataset([a_dataset, b_dataset, c_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.40 * total_samples)
+    test_size = int(0.20 * total_samples)
     train_and_validation_size = total_samples - test_size
     train_size = int(0.8 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
@@ -386,7 +390,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
     # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    # train_model(model, train_loader, val_loader, num_epochs=20, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=20, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     

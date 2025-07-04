@@ -11,3 +11,22 @@ Epoch 10/20, Train Loss: 0.6633, Val Loss: 0.5919
 Epoch 11/20, Train Loss: 0.6803, Val Loss: 0.7864
 Epoch 12/20, Train Loss: 1.1692, Val Loss: 4.0290
 Epoch 13/20, Train Loss: 1.3154, Val Loss: 0.7034
+
+Evaluating model: crnn_epoch_5.pth
+Model crnn_epoch_5.pth - Token Accuracy: 12.34%, Sequence Accuracy: 0.00%
+Evaluating model: crnn_epoch_4.pth
+Model crnn_epoch_4.pth - Token Accuracy: 63.67%, Sequence Accuracy: 3.23%
+Evaluating model: crnn_epoch_6.pth
+Model crnn_epoch_6.pth - Token Accuracy: 52.91%, Sequence Accuracy: 0.86%
+Evaluating model: crnn_epoch_7.pth
+Model crnn_epoch_7.pth - Token Accuracy: 31.94%, Sequence Accuracy: 0.02%
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 48.20%, Sequence Accuracy: 0.72%
+Evaluating model: crnn_epoch_2.pth
+Model crnn_epoch_2.pth - Token Accuracy: 72.14%, Sequence Accuracy: 7.36%
+Evaluating model: crnn_epoch_1.pth
+Model crnn_epoch_1.pth - Token Accuracy: 68.32%, Sequence Accuracy: 5.10%
+Evaluating model: crnn_epoch_14.pth
+Model crnn_epoch_14.pth - Token Accuracy: 72.65%, Sequence Accuracy: 9.56%
+Evaluating model: crnn_epoch_11.pth
+Model crnn_epoch_11.pth - Token Accuracy: 61.08%, Sequence Accuracy: 3.72%
