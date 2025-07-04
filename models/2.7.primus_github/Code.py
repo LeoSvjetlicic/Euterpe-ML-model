@@ -335,18 +335,15 @@ def save_normalized_images(dataset, output_path, num_images=50):
 if __name__ == "__main__":
     data_package_aa = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_aa" 
     data_package_ab = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab" 
-    data_package_c = "/Users/leosvjetlicic/Desktop/Diplomski/Corpus" 
 
     VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab.json" 
     vocab = load_vocabulary_from_file(VOCAB_PATH)[0]
 
-    a_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
-    b_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
-    c_dataset = MusicScoreDataset(data_package_c, transform=None, vocab=vocab, num_samples=None)
-
-    combined_dataset = ConcatDataset([a_dataset, b_dataset, c_dataset])
+    train_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
+    val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
+    combined_dataset = ConcatDataset([train_dataset, val_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.40 * total_samples)
+    test_size = int(0.20 * total_samples)
     train_and_validation_size = total_samples - test_size
     train_size = int(0.8 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
@@ -379,14 +376,14 @@ if __name__ == "__main__":
     print(f"Test samples: {len(test_split)}")
     print(f"Training samples: {len(train_split)}")
     print(f"Validation samples: {len(val_split)}")
-    print(f"Vocabulary size: {len(vocab)}")
+    print(f"Vocabulary size: {len(train_dataset.vocab)}")
 
-    model = CRNN(vocab_size=len(vocab) + 1)
+    model = CRNN(vocab_size=len(train_dataset.vocab) + 1)
     device = torch.device("cpu")
     print(f"Using device: {device}")
     # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    # train_model(model, train_loader, val_loader, num_epochs=20, device=device)
+    # train_model(model, train_loader, val_loader, num_epochs=15, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
@@ -395,7 +392,7 @@ if __name__ == "__main__":
         test_split=test_split,
         model_folder=model_folder,
         device=device,
-        vocab = vocab,
+        vocab = train_dataset.vocab,
         batch_size=16,
     )
 

@@ -44,8 +44,8 @@ def ctc_decode(token_list):
 
 # ===== CONFIGURATION =====
 MODEL_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/models/25.6.lr 0.05_ok_but_needs_more_epochs/crnn_epoch_10.pth"
-IMAGE_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab/220014559-1_1_2/220014559-1_1_2.png"
-VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab_save_path.json"
+IMAGE_PATH = "/Users/leosvjetlicic/Desktop/tst.png"
+VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab.json"
 # =========================
 
 # Load vocabulary

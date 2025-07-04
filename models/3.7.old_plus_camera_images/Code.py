@@ -1,25 +1,17 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms as transforms
 import torch.nn.functional as F
 import cv2
-import numpy as np
 from pathlib import Path
 import random
-import os
 import json
 from torch.utils.data import ConcatDataset, random_split
 import torchvision.transforms.functional as TF
-from Levenshtein import distance as levenshtein_distance
-import matplotlib.pyplot as plt
-from sklearn.metrics import precision_score, recall_score, f1_score
 import numpy as np
 from torchvision.utils import save_image
 from torch.utils.data import Subset
 import os
-from pathlib import Path
 
 def load_vocabulary_from_file(vocab_path):
     with open(vocab_path, 'r') as f:
@@ -29,48 +21,45 @@ def load_vocabulary_from_file(vocab_path):
     return vocab, token_to_idx, idx_to_token
 
 def random_affine(img):
-    translate = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05))  
-
+    translate = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05))
     scale = random.uniform(0.95, 1.05)
-
     shear = random.uniform(-8, 8)
-
-    img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0) 
+    img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0)
     img_tensor = TF.to_pil_image(img_tensor)
     img_tensor = TF.affine(img_tensor, angle=0, translate=(int(translate[0]*img.shape[1]), int(translate[1]*img.shape[0])), scale=scale, shear=shear, fill=0)
-    img_tensor = TF.to_tensor(img_tensor).squeeze(0) 
+    img_tensor = TF.to_tensor(img_tensor).squeeze(0)
     return img_tensor.numpy()
 
 def add_gaussian_noise(img, mean=0, std=0.05):
-    """Add Gaussian noise to an image."""
     noise = np.random.normal(mean, std, img.shape).astype(np.float32)
     noisy_img = img + noise
-    noisy_img = np.clip(noisy_img, 0, 1) 
-    
-    return noisy_img
+    return np.clip(noisy_img, 0, 1)
 
 class MusicScoreDataset(Dataset):
-    def __init__(self, image_dir, transform=None, vocab=None, max_seq_len=65, num_samples=None):
+    def __init__(self, image_dir, transform=None, vocab=None, max_seq_len=65, num_samples=None,
+                 augment_affine=False, augment_noise=False):
         self.image_dir = Path(image_dir)
         self.transform = transform
         self.max_seq_len = max_seq_len
+        self.augment_affine = augment_affine
+        self.augment_noise = augment_noise
+
         all_image_paths = sorted([p for p in self.image_dir.rglob("*.png") if p.with_suffix('.semantic').exists()])
-        if num_samples is not None:
-            self.image_paths = random.sample(all_image_paths, num_samples)
-        else:
-            self.image_paths = all_image_paths
+        self.image_paths = random.sample(all_image_paths, num_samples) if num_samples else all_image_paths
         self.label_paths = [p.with_suffix('.semantic') for p in self.image_paths]
+
         if vocab is None:
             self.vocab = self.build_vocab()
             self.token_to_idx = {token: idx + 1 for idx, token in enumerate(self.vocab)}
             self.token_to_idx["<BLANK>"] = 0
-            os.makedirs(os.path.dirname("/Users/leosvjetlicic/Desktop/Diplomski/vocab"), exist_ok=True)
-            with open("vocab_save_path", 'w') as f:
+            os.makedirs("/Users/leosvjetlicic/Desktop/Diplomski", exist_ok=True)
+            with open("/Users/leosvjetlicic/Desktop/Diplomski/vocab.json", 'w') as f:
                 json.dump(self.token_to_idx, f, indent=4)
         else:
             self.vocab = vocab
             self.token_to_idx = {token: idx + 1 for idx, token in enumerate(self.vocab)}
             self.token_to_idx["<BLANK>"] = 0
+
         self.idx_to_token = {idx: token for token, idx in self.token_to_idx.items()}
 
     def build_vocab(self):
@@ -80,34 +69,34 @@ class MusicScoreDataset(Dataset):
                 tokens = f.read().strip().split()
                 vocab.update(tokens)
         return sorted(list(vocab))
-    
+
     def __len__(self):
         return len(self.image_paths)
-    
+
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
         if img is None:
             raise ValueError(f"Image not found: {img_path}")
         img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        img = img / 255.0 
-        
+        img = img / 255.0
+
         original_height, original_width = img.shape
         if original_height == 0 or original_width == 0:
-            raise ValueError(f"Invalid image dimensions: {original_height}x{original_width} at {img_path}")
-        if self.transform:
-            img = self.transform(img)
-        else:
-            if random.random() < 0.3:
-                img = random_affine(img)
+            raise ValueError(f"Invalid image dimensions at {img_path}")
+        
+        if self.augment_affine:
+            img = random_affine(img)
+
+        if self.augment_noise:
+            img = add_gaussian_noise(img)
+
         aspect_ratio = original_width / original_height
         new_height = 128
-        new_width = max(1, int(aspect_ratio * new_height)) 
+        new_width = max(1, int(aspect_ratio * new_height))
         img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        img = torch.tensor(img, dtype=torch.float32).unsqueeze(0)
 
-        # img = add_gaussian_noise(img, mean=0, std=0.05)
-        
-        img = torch.tensor(img, dtype=torch.float32).unsqueeze(0) 
         if self.transform:
             img = self.transform(img)
 
@@ -117,6 +106,7 @@ class MusicScoreDataset(Dataset):
         label = [self.token_to_idx[token] for token in tokens if token in self.token_to_idx]
         label = torch.tensor(label, dtype=torch.int32)
         return img, label, len(label)
+
 
 class CRNN(nn.Module):
     def __init__(self, vocab_size):
@@ -136,7 +126,6 @@ class CRNN(nn.Module):
             nn.MaxPool2d(2, 2), 
         )
 
-        # Ovo mi nije jasnoooo
         self.rnn_input_size = 256 * 6
         self.rnn = nn.LSTM(input_size=self.rnn_input_size, hidden_size=256, num_layers=2, batch_first=True, bidirectional=True)
 
@@ -285,11 +274,6 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
 
                         decoded_pred_seq = ctc_decode_idx(predicted)
 
-                        # print(f"seq_len: {seq_len}")
-                        print(f"raw_pred_seq: {predicted}")
-                        # print(f"decoded_pred_seq: {decoded_pred_seq}")
-                        print(f"target_seq: {target_seq}")
-
                         min_len = min(len(decoded_pred_seq), len(target_seq))
                         correct_tokens += sum(p == t for p, t in zip(decoded_pred_seq[:min_len], target_seq[:min_len]))
                         total_tokens += len(target_seq)
@@ -344,23 +328,26 @@ def save_normalized_images(dataset, output_path, num_images=50):
         file_path = output_path / f"image_{i:03d}.png"
         save_image(img, str(file_path))
 
-    print(f"✅ Saved {len(subset)} normalized images to: {output_path}")
+    print(f"Saved {len(subset)} normalized images to: {output_path}")
 
 
 if __name__ == "__main__":
     data_package_aa = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_aa" 
     data_package_ab = "/Users/leosvjetlicic/Desktop/Diplomski/primusCalvoRizoAppliedSciences2018/package_ab" 
+    data_package_c = "/Users/leosvjetlicic/Desktop/Diplomski/Corpus" 
 
     VOCAB_PATH = "/Users/leosvjetlicic/Desktop/Diplomski/vocab.json" 
     vocab = load_vocabulary_from_file(VOCAB_PATH)[0]
 
-    train_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
-    val_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
-    combined_dataset = ConcatDataset([train_dataset, val_dataset])
+    a_dataset = MusicScoreDataset(data_package_aa, transform=None, vocab=vocab, num_samples=None)
+    b_dataset = MusicScoreDataset(data_package_ab, transform=None, vocab=vocab, num_samples=None)
+    c_dataset = MusicScoreDataset(data_package_c, transform=None, vocab=vocab, num_samples=None)
+
+    combined_dataset = ConcatDataset([a_dataset, b_dataset, c_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.20 * total_samples)
+    test_size = int(0.2 * total_samples)
     train_and_validation_size = total_samples - test_size
-    train_size = int(0.85 * train_and_validation_size)
+    train_size = int(0.8 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
 
     test_split, others_split = random_split(
@@ -391,14 +378,14 @@ if __name__ == "__main__":
     print(f"Test samples: {len(test_split)}")
     print(f"Training samples: {len(train_split)}")
     print(f"Validation samples: {len(val_split)}")
-    print(f"Vocabulary size: {len(train_dataset.vocab)}")
+    print(f"Vocabulary size: {len(vocab)}")
 
-    model = CRNN(vocab_size=len(train_dataset.vocab) + 1)
+    model = CRNN(vocab_size=len(vocab) + 1)
     device = torch.device("cpu")
     print(f"Using device: {device}")
     # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
 
-    train_model(model, train_loader, val_loader, num_epochs=15, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=20, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
@@ -407,7 +394,7 @@ if __name__ == "__main__":
         test_split=test_split,
         model_folder=model_folder,
         device=device,
-        vocab = train_dataset.vocab,
+        vocab = vocab,
         batch_size=16,
     )
 

@@ -1,0 +1,12 @@
+Evaluating model: crnn_epoch_4.pth
+Model crnn_epoch_4.pth - Token Accuracy: 76.68%, Sequence Accuracy: 7.53%
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 70.12%, Sequence Accuracy: 5.46%
+Evaluating model: crnn_epoch_2.pth
+Model crnn_epoch_2.pth - Token Accuracy: 66.07%, Sequence Accuracy: 4.08%
+Evaluating model: crnn_epoch_1.pth
+Model crnn_epoch_1.pth - Token Accuracy: 43.69%, Sequence Accuracy: 0.10%
+
+Summary of Evaluation:
+Average Token Accuracy across 4 models: 64.14%
+Average Sequence Accuracy across 4 models: 4.29%

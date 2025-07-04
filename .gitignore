@@ -5,6 +5,7 @@ applsci-08-00606-v3.pdf
 failsafe.py
 loss_curve.png
 primusCalvoRizoAppliedSciences2018/
+Corpus/
 .DS_Store
 project_setup.py
 models/*/*.pth
