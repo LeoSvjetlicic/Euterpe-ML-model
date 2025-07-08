@@ -1,0 +1,60 @@
+Epoch 1/20, Train Loss: 2.8864, Val Loss: 0.3363
+Epoch 2/20, Train Loss: 0.1723, Val Loss: 0.1058
+Epoch 3/20, Train Loss: 0.0781, Val Loss: 0.0665
+Epoch 4/20, Train Loss: 0.0508, Val Loss: 0.0516
+Epoch 5/20, Train Loss: 0.0369, Val Loss: 0.0404
+Epoch 6/20, Train Loss: 0.0285, Val Loss: 0.0348
+Epoch 7/20, Train Loss: 0.0232, Val Loss: 0.0318
+Epoch 8/20, Train Loss: 0.0198, Val Loss: 0.0294
+Epoch 9/20, Train Loss: 0.0168, Val Loss: 0.0264
+Epoch 10/20, Train Loss: 0.0147, Val Loss: 0.0252
+Epoch 11/20, Train Loss: 0.0128, Val Loss: 0.0241
+Epoch 12/20, Train Loss: 0.0116, Val Loss: 0.0237
+Epoch 13/20, Train Loss: 0.0107, Val Loss: 0.0225
+Epoch 14/20, Train Loss: 0.0101, Val Loss: 0.0226
+Epoch 15/20, Train Loss: 0.0094, Val Loss: 0.0219
+Epoch 16/20, Train Loss: 0.0084, Val Loss: 0.0215
+Epoch 17/20, Train Loss: 0.0077, Val Loss: 0.0215
+Epoch 18/20, Train Loss: 0.0070, Val Loss: 0.0209
+Epoch 19/20, Train Loss: 0.0066, Val Loss: 0.0207
+Epoch 20/20, Train Loss: 0.0060, Val Loss: 0.0213
+
+
+Evaluating model: crnn_epoch_5.pth
+Model crnn_epoch_5.pth - Token Accuracy: 96.18%, Sequence Accuracy: 49.41%
+Evaluating model: crnn_epoch_4.pth
+Model crnn_epoch_4.pth - Token Accuracy: 96.57%, Sequence Accuracy: 49.48%
+Evaluating model: crnn_epoch_6.pth
+Model crnn_epoch_6.pth - Token Accuracy: 97.14%, Sequence Accuracy: 55.06%
+Evaluating model: crnn_epoch_7.pth
+Model crnn_epoch_7.pth - Token Accuracy: 97.52%, Sequence Accuracy: 55.05%
+Evaluating model: crnn_epoch_3.pth
+Model crnn_epoch_3.pth - Token Accuracy: 95.52%, Sequence Accuracy: 46.76%
+Evaluating model: crnn_epoch_2.pth
+Model crnn_epoch_2.pth - Token Accuracy: 93.76%, Sequence Accuracy: 38.14%
+Evaluating model: crnn_epoch_1.pth
+Model crnn_epoch_1.pth - Token Accuracy: 85.76%, Sequence Accuracy: 18.66%
+Evaluating model: crnn_epoch_20.pth
+Model crnn_epoch_20.pth - Token Accuracy: 98.05%, Sequence Accuracy: 67.65%
+Evaluating model: crnn_epoch_18.pth
+Model crnn_epoch_18.pth - Token Accuracy: 98.02%, Sequence Accuracy: 66.05%
+
+Evaluating model: crnn_epoch_19.pth
+Model crnn_epoch_19.pth - Token Accuracy: 98.31%, Sequence Accuracy: 66.88%
+
+Evaluating model: crnn_epoch_17.pth
+Model crnn_epoch_17.pth - Token Accuracy: 98.08%, Sequence Accuracy: 66.93%
+Evaluating model: crnn_epoch_16.pth
+Model crnn_epoch_16.pth - Token Accuracy: 97.78%, Sequence Accuracy: 63.51%
+Evaluating model: crnn_epoch_14.pth
+Model crnn_epoch_14.pth - Token Accuracy: 97.88%, Sequence Accuracy: 64.61%
+Evaluating model: crnn_epoch_15.pth
+Model crnn_epoch_15.pth - Token Accuracy: 98.08%, Sequence Accuracy: 65.28%
+Evaluating model: crnn_epoch_11.pth
+Model crnn_epoch_11.pth - Token Accuracy: 97.52%, Sequence Accuracy: 60.55%
+Evaluating model: crnn_epoch_10.pth
+Model crnn_epoch_10.pth - Token Accuracy: 97.50%, Sequence Accuracy: 60.76%
+Evaluating model: crnn_epoch_12.pth
+Model crnn_epoch_12.pth - Token Accuracy: 97.94%, Sequence Accuracy: 64.84%
+Evaluating model: crnn_epoch_13.pth
+Model crnn_epoch_13.pth - Token Accuracy: 97.89%, Sequence Accuracy: 63.86%
