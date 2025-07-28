@@ -1,0 +1,21 @@
+Training model with 20 epochs
+Epoch 1/20, Train Loss: 1.0371, Val Loss: 0.1666
+Epoch 2/20, Train Loss: 0.1162, Val Loss: 0.0849
+Epoch 3/20, Train Loss: 0.0666, Val Loss: 0.0597
+Epoch 4/20, Train Loss: 0.0471, Val Loss: 0.0484
+Epoch 5/20, Train Loss: 0.0361, Val Loss: 0.0411
+Epoch 6/20, Train Loss: 0.0290, Val Loss: 0.0363
+Epoch 7/20, Train Loss: 0.0243, Val Loss: 0.0327
+Epoch 8/20, Train Loss: 0.0204, Val Loss: 0.0311
+Epoch 9/20, Train Loss: 0.0177, Val Loss: 0.0292
+Epoch 10/20, Train Loss: 0.0157, Val Loss: 0.0304
+Epoch 11/20, Train Loss: 0.0137, Val Loss: 0.0262
+Epoch 12/20, Train Loss: 0.0122, Val Loss: 0.0259
+Epoch 13/20, Train Loss: 0.0105, Val Loss: 0.0248
+Epoch 14/20, Train Loss: 0.0095, Val Loss: 0.0239
+Epoch 15/20, Train Loss: 0.0085, Val Loss: 0.0244
+Epoch 16/20, Train Loss: 0.0070, Val Loss: 0.0236
+Epoch 17/20, Train Loss: 0.0064, Val Loss: 0.0232
+Epoch 18/20, Train Loss: 0.0058, Val Loss: 0.0231
+Epoch 19/20, Train Loss: 0.0048, Val Loss: 0.0229
+Epoch 20/20, Train Loss: 0.0052, Val Loss: 0.0245

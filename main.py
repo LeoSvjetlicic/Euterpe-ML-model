@@ -21,19 +21,37 @@ def load_vocabulary_from_file(vocab_path):
     return vocab, token_to_idx, idx_to_token
 
 def random_affine(img):
-    translate = (random.uniform(-0.05, 0.05), random.uniform(-0.05, 0.05))
-    scale = random.uniform(0.95, 1.05)
-    shear = random.uniform(-8, 8)
+    angle = random.uniform(-0.8, 0.8)
+    
+    img_height, img_width = img.shape
+    max_translate_x = min(8, img_width * 0.1)
+    max_translate_y = min(8, img_height * 0.1)
+    translate_x = random.uniform(-max_translate_x, max_translate_x)
+    translate_y = random.uniform(-max_translate_y, max_translate_y)
+    scale = random.uniform(1, 1)
+    shear = random.uniform(-4.5, 4.5)
     img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0)
-    img_tensor = TF.to_pil_image(img_tensor)
-    img_tensor = TF.affine(img_tensor, angle=0, translate=(int(translate[0]*img.shape[1]), int(translate[1]*img.shape[0])), scale=scale, shear=shear, fill=0)
-    img_tensor = TF.to_tensor(img_tensor).squeeze(0)
-    return img_tensor.numpy()
+    img_pil = TF.to_pil_image(img_tensor)
+    img_transformed = TF.affine(
+        img_pil, 
+        angle=angle,
+        translate=(int(translate_x), int(translate_y)),
+        scale=scale,
+        shear=shear,
+        fill=255
+    )
+    img_tensor = TF.to_tensor(img_transformed).squeeze(0)
+    img_array = img_tensor.numpy()
 
-def add_gaussian_noise(img, mean=0, std=0.05):
-    noise = np.random.normal(mean, std, img.shape).astype(np.float32)
-    noisy_img = img + noise
-    return np.clip(noisy_img, 0, 1)
+    if random.random() < 0.6: 
+        kernel_size = random.choice([3, 5, 7])
+        sigma = random.uniform(0.5, 2.0)
+        img_uint8 = (img_array * 255).astype(np.uint8)
+        img_blurred = cv2.GaussianBlur(img_uint8, (kernel_size, kernel_size), sigma)
+        img_array = img_blurred.astype(np.float32) / 255.0
+    
+    return img_array
+
 
 class MusicScoreDataset(Dataset):
     def __init__(self, image_dir, transform=None, vocab=None, max_seq_len=65, num_samples=None,
@@ -78,18 +96,14 @@ class MusicScoreDataset(Dataset):
         img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
         if img is None:
             raise ValueError(f"Image not found: {img_path}")
-        img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
-        img = img / 255.0
-
+        
+        
+        # if random.random() < 0.7:  - dodati kasnije
+        #     random_affine(img)
+        
         original_height, original_width = img.shape
         if original_height == 0 or original_width == 0:
             raise ValueError(f"Invalid image dimensions at {img_path}")
-        
-        if self.augment_affine:
-            img = random_affine(img)
-
-        if self.augment_noise:
-            img = add_gaussian_noise(img)
 
         aspect_ratio = original_width / original_height
         new_height = 128
@@ -114,22 +128,29 @@ class CRNN(nn.Module):
 
         self.cnn = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2), 
+
+            nn.BatchNorm2d(32),
 
             nn.Conv2d(32, 64, kernel_size=3),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2), 
+
+            nn.BatchNorm2d(64),
 
             nn.Conv2d(64, 128, kernel_size=3),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2), 
 
+            nn.BatchNorm2d(128),
+
             nn.Conv2d(128, 256, kernel_size=3),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.MaxPool2d(2, 2), 
         )
 
+        #  LSTM aktivacijska funkcija - softmax?????  nije preporuceno jer CTC u koji se predaju ove vrijednosti koristi oblik softmaxa pa je preporucene predati "RAW" vrijednosti
         # Ovo mi nije jasnoooo
         self.rnn_input_size = 256 * 6
         self.rnn = nn.LSTM(input_size=self.rnn_input_size, hidden_size=256, num_layers=2, batch_first=True, bidirectional=True)
@@ -145,6 +166,7 @@ class CRNN(nn.Module):
         x = self.fc(x)      # output shape: (B, W, vocab_size)
         return x
 
+#  normalizirati izlaze
 def collate_fn(batch):
     images, labels, label_lengths = zip(*batch)
     max_height = max(img.size(1) for img in images)
@@ -350,9 +372,9 @@ if __name__ == "__main__":
 
     combined_dataset = ConcatDataset([a_dataset, b_dataset, c_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.20 * total_samples)
+    test_size = int(0.2 * total_samples)
     train_and_validation_size = total_samples - test_size
-    train_size = int(0.8 * train_and_validation_size)
+    train_size = int(0.6 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
 
     test_split, others_split = random_split(
@@ -367,39 +389,44 @@ if __name__ == "__main__":
         generator=torch.Generator().manual_seed(42) 
     )
 
-    train_loader = DataLoader(
-        train_split,
-        batch_size=16,
-        shuffle=True,
-        collate_fn=collate_fn
-    )
+    batchSizes = [16,32,64]
 
-    val_loader = DataLoader(
-        val_split,
-        batch_size=16,
-        shuffle=True,
-        collate_fn=collate_fn
-    )
-    print(f"Test samples: {len(test_split)}")
-    print(f"Training samples: {len(train_split)}")
-    print(f"Validation samples: {len(val_split)}")
-    print(f"Vocabulary size: {len(vocab)}")
+    for i in batchSizes:
+        train_loader = DataLoader(
+            train_split,
+            batch_size=i,
+            shuffle=True,
+            collate_fn=collate_fn
+        )
 
-    model = CRNN(vocab_size=len(vocab) + 1)
-    device = torch.device("cpu")
-    print(f"Using device: {device}")
-    # save_normalized_images(train_dataset, output_path="/Users/leosvjetlicic/Desktop/Diplomski/normalized_samples")
+        val_loader = DataLoader(
+            val_split,
+            batch_size=i,
+            shuffle=True,
+            collate_fn=collate_fn
+        )
+        print(f"Test samples: {len(test_split)}")
+        print(f"Training samples: {len(train_split)}")
+        print(f"Validation samples: {len(val_split)}")
+        print(f"Vocabulary size: {len(vocab)}")
 
-    train_model(model, train_loader, val_loader, num_epochs=20, device=device)
+        device = torch.device("cpu")
+        print(f"Using device: {device}")
 
-    model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
+        epochValues = 30
+
+        model = CRNN(vocab_size=len(vocab) + 1)
+        print(f"\nTraining model with {i} epochs")
+        train_model(model, train_loader, val_loader, num_epochs=epochValues, device=device)
+
+    # model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
-    results = evaluate_models(
-        model_class=CRNN,
-        test_split=test_split,
-        model_folder=model_folder,
-        device=device,
-        vocab = vocab,
-        batch_size=16,
-    )
+    # results = evaluate_models(
+    #     model_class=CRNN,
+    #     test_split=test_split,
+    #     model_folder=model_folder,
+    #     device=device,
+    #     vocab = vocab,
+    #     batch_size=16,
+    # )
 

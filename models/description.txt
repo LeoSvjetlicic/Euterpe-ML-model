@@ -1,0 +1,6 @@
+Evaluating model: crnn_epoch_25.pth
+Model crnn_epoch_25.pth - Token Accuracy: 97.69%, Sequence Accuracy: 66.18%
+
+Summary of Evaluation:
+Average Token Accuracy across 1 models: 97.69%
+Average Sequence Accuracy across 1 models: 66.18%
