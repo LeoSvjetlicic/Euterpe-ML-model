@@ -1,0 +1,31 @@
+Training model with 0.1 epochs
+Epoch 1/30, Train Loss: 2.6167, Val Loss: 0.9494
+Epoch 2/30, Train Loss: 0.5928, Val Loss: 0.3957
+Epoch 3/30, Train Loss: 0.3093, Val Loss: 0.2575
+Epoch 4/30, Train Loss: 0.2126, Val Loss: 0.1897
+Epoch 5/30, Train Loss: 0.1631, Val Loss: 0.1540
+Epoch 6/30, Train Loss: 0.1319, Val Loss: 0.1310
+Epoch 7/30, Train Loss: 0.1101, Val Loss: 0.1127
+Epoch 8/30, Train Loss: 0.0943, Val Loss: 0.1026
+Epoch 9/30, Train Loss: 0.0828, Val Loss: 0.0888
+Epoch 10/30, Train Loss: 0.0738, Val Loss: 0.0820
+Epoch 11/30, Train Loss: 0.0665, Val Loss: 0.0767
+Epoch 12/30, Train Loss: 0.0605, Val Loss: 0.0726
+Epoch 13/30, Train Loss: 0.0554, Val Loss: 0.0678
+Epoch 14/30, Train Loss: 0.0511, Val Loss: 0.0643
+Epoch 15/30, Train Loss: 0.0475, Val Loss: 0.0613
+Epoch 16/30, Train Loss: 0.0440, Val Loss: 0.0578
+Epoch 17/30, Train Loss: 0.0412, Val Loss: 0.0556
+Epoch 18/30, Train Loss: 0.0385, Val Loss: 0.0537
+Epoch 19/30, Train Loss: 0.0364, Val Loss: 0.0593
+Epoch 20/30, Train Loss: 0.0345, Val Loss: 0.0502
+Epoch 21/30, Train Loss: 0.0322, Val Loss: 0.0492
+Epoch 22/30, Train Loss: 0.0307, Val Loss: 0.0485
+Epoch 23/30, Train Loss: 0.0291, Val Loss: 0.0464
+Epoch 24/30, Train Loss: 0.0277, Val Loss: 0.0461
+Epoch 25/30, Train Loss: 0.0265, Val Loss: 0.0451
+Epoch 26/30, Train Loss: 0.0251, Val Loss: 0.0446
+Epoch 27/30, Train Loss: 0.0239, Val Loss: 0.0434
+Epoch 28/30, Train Loss: 0.0227, Val Loss: 0.0432
+Epoch 29/30, Train Loss: 0.0214, Val Loss: 0.0419
+ Epoch 30/30, Train Loss: 0.0205, Val Loss: 0.0413

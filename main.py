@@ -185,10 +185,10 @@ def collate_fn(batch):
     label_lengths = torch.tensor(label_lengths)
     return padded_images, padded_labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo", max_seq_len=65):
+def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo"):
     model = model.to(device)
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
-    optimizer = torch.optim.Adadelta(model.parameters())
+    optimizer = torch.optim.Adadelta(model.parameters(),lr=1)
 
     train_losses = []
     val_losses = []
@@ -389,35 +389,32 @@ if __name__ == "__main__":
         generator=torch.Generator().manual_seed(42) 
     )
 
-    batchSizes = [16,32,64]
 
-    for i in batchSizes:
-        train_loader = DataLoader(
-            train_split,
-            batch_size=i,
-            shuffle=True,
-            collate_fn=collate_fn
-        )
+    train_loader = DataLoader(
+        train_split,
+        batch_size=16,
+        shuffle=True,
+        collate_fn=collate_fn
+    )
 
-        val_loader = DataLoader(
-            val_split,
-            batch_size=i,
-            shuffle=True,
-            collate_fn=collate_fn
-        )
-        print(f"Test samples: {len(test_split)}")
-        print(f"Training samples: {len(train_split)}")
-        print(f"Validation samples: {len(val_split)}")
-        print(f"Vocabulary size: {len(vocab)}")
+    val_loader = DataLoader(
+        val_split,
+        batch_size=16,
+        shuffle=True,
+        collate_fn=collate_fn
+    )
+    print(f"Test samples: {len(test_split)}")
+    print(f"Training samples: {len(train_split)}")
+    print(f"Validation samples: {len(val_split)}")
+    print(f"Vocabulary size: {len(vocab)}")
 
-        device = torch.device("cpu")
-        print(f"Using device: {device}")
+    device = torch.device("cpu")
+    print(f"Using device: {device}")
 
-        epochValues = 30
+    epochValue = 30
 
-        model = CRNN(vocab_size=len(vocab) + 1)
-        print(f"\nTraining model with {i} epochs")
-        train_model(model, train_loader, val_loader, num_epochs=epochValues, device=device)
+    model = CRNN(vocab_size=len(vocab) + 1)
+    train_model(model, train_loader, val_loader, num_epochs=epochValue, device=device)
 
     # model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
     
