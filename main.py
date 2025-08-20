@@ -1,17 +1,17 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset, random_split, Subset
 import torch.nn.functional as F
+import numpy as np
 import cv2
 from pathlib import Path
 import random
 import json
-from torch.utils.data import ConcatDataset, random_split
-import torchvision.transforms.functional as TF
-import numpy as np
 from torchvision.utils import save_image
-from torch.utils.data import Subset
 import os
+from PIL import Image
+import io
+import torchvision.transforms.functional as TF
 
 def load_vocabulary_from_file(vocab_path):
     with open(vocab_path, 'r') as f:
@@ -20,38 +20,72 @@ def load_vocabulary_from_file(vocab_path):
     idx_to_token = {int(idx): token for token, idx in token_to_idx.items()}
     return vocab, token_to_idx, idx_to_token
 
-def random_affine(img):
-    angle = random.uniform(-0.8, 0.8)
-    
-    img_height, img_width = img.shape
-    max_translate_x = min(8, img_width * 0.1)
-    max_translate_y = min(8, img_height * 0.1)
-    translate_x = random.uniform(-max_translate_x, max_translate_x)
-    translate_y = random.uniform(-max_translate_y, max_translate_y)
-    scale = random.uniform(1, 1)
-    shear = random.uniform(-4.5, 4.5)
+def random_camera_augment(img):
     img_tensor = torch.tensor(img, dtype=torch.float32).unsqueeze(0)
     img_pil = TF.to_pil_image(img_tensor)
-    img_transformed = TF.affine(
-        img_pil, 
+    
+    # Random affine transformation
+    angle = random.uniform(-0.8, 0.8)
+    img_height, img_width = img.shape
+    max_translate_x = min(8, int(img_width * 0.10))
+    max_translate_y = min(8, int(img_height * 0.10))
+    translate_x = random.uniform(-max_translate_x, max_translate_x)
+    translate_y = random.uniform(-max_translate_y, max_translate_y)
+    scale = random.uniform(0.95, 1.10)
+    shear = random.uniform(-4.5, 4.5)
+    
+    img_pil = TF.affine(
+        img_pil,
         angle=angle,
         translate=(int(translate_x), int(translate_y)),
         scale=scale,
         shear=shear,
-        fill=255
+        fill=0
     )
-    img_tensor = TF.to_tensor(img_transformed).squeeze(0)
+    
+    # Brightness and contrast adjustment
+    if random.random() < 0.5:
+        brightness = random.uniform(0.7, 1.3)
+        img_pil = TF.adjust_brightness(img_pil, brightness)
+        contrast = random.uniform(0.7, 1.3)
+        img_pil = TF.adjust_contrast(img_pil, contrast)
+    
+    img_tensor = TF.to_tensor(img_pil).squeeze(0)
     img_array = img_tensor.numpy()
+    
+    
+    # No augmentations: tryIndex = 0
+    # Only blur: tryIndex = 1
+    # Only noise: tryIndex = 2
+    # Only occlusion: tryIndex = 4
+    # Blur + noise: tryIndex = 3
+    # Blur + occlusion: tryIndex = 5
+    # Noise + occlusion: tryIndex = 6
+    # All three: tryIndex = 7
 
-    if random.random() < 0.6: 
+    # Gaussian blur
+    if random.random() < 0.3:
         kernel_size = random.choice([3, 5, 7])
         sigma = random.uniform(0.5, 2.0)
         img_uint8 = (img_array * 255).astype(np.uint8)
         img_blurred = cv2.GaussianBlur(img_uint8, (kernel_size, kernel_size), sigma)
         img_array = img_blurred.astype(np.float32) / 255.0
     
+    # Add Gaussian noise
+    if random.random() < 0.3:
+        noise = np.random.normal(0, 0.02, img_array.shape)
+        img_array = np.clip(img_array + noise, 0, 1)
+    
+    # Random occlusion
+    if random.random() < 0.3:
+        h, w = img_array.shape
+        occ_w = random.randint(w//10, w//5)
+        occ_h = random.randint(h//10, h//5)
+        x0 = random.randint(0, w - occ_w)
+        y0 = random.randint(0, h - occ_h)
+        img_array[y0:y0 + occ_h, x0:x0 + occ_w] = random.uniform(0, 0.3)
+    
     return img_array
-
 
 class MusicScoreDataset(Dataset):
     def __init__(self, image_dir, transform=None, vocab=None, max_seq_len=65, num_samples=None,
@@ -61,7 +95,6 @@ class MusicScoreDataset(Dataset):
         self.max_seq_len = max_seq_len
         self.augment_affine = augment_affine
         self.augment_noise = augment_noise
-
         all_image_paths = sorted([p for p in self.image_dir.rglob("*.png") if p.with_suffix('.semantic').exists()])
         self.image_paths = random.sample(all_image_paths, num_samples) if num_samples else all_image_paths
         self.label_paths = [p.with_suffix('.semantic') for p in self.image_paths]
@@ -98,8 +131,8 @@ class MusicScoreDataset(Dataset):
             raise ValueError(f"Image not found: {img_path}")
         
         
-        # if random.random() < 0.7:  - dodati kasnije
-        #     random_affine(img)
+        if random.random() < 0.8:
+           img = random_camera_augment(img)
         
         original_height, original_width = img.shape
         if original_height == 0 or original_width == 0:
@@ -185,7 +218,7 @@ def collate_fn(batch):
     label_lengths = torch.tensor(label_lengths)
     return padded_images, padded_labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo"):
+def train_model(model, train_loader, val_loader, num_epochs=70, device="cudo",tryIndex=1):
     model = model.to(device)
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = torch.optim.Adadelta(model.parameters(),lr=1)
@@ -229,7 +262,8 @@ def train_model(model, train_loader, val_loader, num_epochs=10, device="cudo"):
 
         checkpoint_dir = "/Users/leosvjetlicic/Desktop/Diplomski/models/"
         os.makedirs(checkpoint_dir, exist_ok=True)
-        torch.save(model.state_dict(), f"{checkpoint_dir}/crnn_epoch_{epoch+1}.pth")
+        if epoch % 10 == 0:
+            torch.save(model.state_dict(), f"{checkpoint_dir}/crnn_epoch_{epoch+1}.pth")
 
 def decode_sequence(tensor_seq, idx_to_char):
     chars = [idx_to_char[idx.item()] for idx in tensor_seq]
@@ -372,9 +406,9 @@ if __name__ == "__main__":
 
     combined_dataset = ConcatDataset([a_dataset, b_dataset, c_dataset])
     total_samples = len(combined_dataset)
-    test_size = int(0.2 * total_samples)
+    test_size = int(0.05 * total_samples)
     train_and_validation_size = total_samples - test_size
-    train_size = int(0.6 * train_and_validation_size)
+    train_size = int(1 * train_and_validation_size)
     val_size = train_and_validation_size - train_size
 
     test_split, others_split = random_split(
@@ -411,19 +445,17 @@ if __name__ == "__main__":
     device = torch.device("cpu")
     print(f"Using device: {device}")
 
-    epochValue = 30
-
     model = CRNN(vocab_size=len(vocab) + 1)
-    train_model(model, train_loader, val_loader, num_epochs=epochValue, device=device)
+    train_model(model, train_loader, val_loader, num_epochs=70, device=device)
 
-    # model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
-    
-    # results = evaluate_models(
-    #     model_class=CRNN,
-    #     test_split=test_split,
-    #     model_folder=model_folder,
-    #     device=device,
-    #     vocab = vocab,
-    #     batch_size=16,
-    # )
+    model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
+
+    results = evaluate_models(
+        model_class=CRNN,
+        test_split=test_split,
+        model_folder=model_folder,
+        device=device,
+        vocab = vocab,
+        batch_size=16,
+    )
 

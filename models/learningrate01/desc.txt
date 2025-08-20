@@ -28,4 +28,4 @@ Epoch 26/30, Train Loss: 0.0251, Val Loss: 0.0446
 Epoch 27/30, Train Loss: 0.0239, Val Loss: 0.0434
 Epoch 28/30, Train Loss: 0.0227, Val Loss: 0.0432
 Epoch 29/30, Train Loss: 0.0214, Val Loss: 0.0419
- Epoch 30/30, Train Loss: 0.0205, Val Loss: 0.0413
+Epoch 30/30, Train Loss: 0.0205, Val Loss: 0.0413
