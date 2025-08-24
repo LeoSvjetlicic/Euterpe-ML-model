@@ -161,25 +161,25 @@ class CRNN(nn.Module):
 
         self.cnn = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=3),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.BatchNorm2d(32),
 
             nn.Conv2d(32, 64, kernel_size=3),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.BatchNorm2d(64),
 
             nn.Conv2d(64, 128, kernel_size=3),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
 
             nn.BatchNorm2d(128),
 
             nn.Conv2d(128, 256, kernel_size=3),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.MaxPool2d(2, 2), 
         )
 
@@ -218,13 +218,11 @@ def collate_fn(batch):
     label_lengths = torch.tensor(label_lengths)
     return padded_images, padded_labels, label_lengths
 
-def train_model(model, train_loader, val_loader, num_epochs=70, device="cudo",tryIndex=1):
+def train_model(model, train_loader, num_epochs=30, device="cpu"):
     model = model.to(device)
     criterion = nn.CTCLoss(blank=0, zero_infinity=True)
     optimizer = torch.optim.Adadelta(model.parameters(),lr=1)
-
     train_losses = []
-    val_losses = []
 
     for epoch in range(num_epochs):
         model.train()
@@ -232,9 +230,9 @@ def train_model(model, train_loader, val_loader, num_epochs=70, device="cudo",tr
         for images, labels, label_lengths in train_loader:
             images, labels, label_lengths = images.to(device), labels.to(device), label_lengths.to(device)
             optimizer.zero_grad()
-            outputs = model(images)  # Shape: (batch_size, seq_len, vocab_size)
-            outputs = outputs.log_softmax(2)  # Log probabilities
-            input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
+            outputs = model(images) 
+            outputs = outputs.log_softmax(2)
+            input_lengths = torch.full((images.size(0)), outputs.size(1), dtype=torch.long).to(device)
             loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
             loss.backward()
             optimizer.step()
@@ -242,27 +240,11 @@ def train_model(model, train_loader, val_loader, num_epochs=70, device="cudo",tr
 
         avg_train_loss = train_loss / len(train_loader)
         train_losses.append(avg_train_loss)
-
-        model.eval()
-        val_loss = 0
-        with torch.no_grad():
-            for images, labels, label_lengths in val_loader:
-                images, labels, label_lengths = images.to(device), labels.to(device), label_lengths.to(device)
-                outputs = model(images)
-                outputs = outputs.log_softmax(2)
-                input_lengths = torch.full((images.size(0),), outputs.size(1), dtype=torch.long).to(device)
-                loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
-                val_loss += loss.item()
-
-        avg_val_loss = val_loss / len(val_loader)
-        val_losses.append(avg_val_loss)
-
-        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, "
-              f"Val Loss: {avg_val_loss:.4f}")
-
-        checkpoint_dir = "/Users/leosvjetlicic/Desktop/Diplomski/models/"
+       
+        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}, ")
+        checkpoint_dir = "(../models/"
         os.makedirs(checkpoint_dir, exist_ok=True)
-        if epoch % 10 == 0:
+        if epoch % 5 == 0:
             torch.save(model.state_dict(), f"{checkpoint_dir}/crnn_epoch_{epoch+1}.pth")
 
 def decode_sequence(tensor_seq, idx_to_char):
@@ -270,10 +252,6 @@ def decode_sequence(tensor_seq, idx_to_char):
     return ''.join(chars)
 
 def ctc_decode_idx(token_list, blank_token=0):
-    """
-    Collapse consecutive duplicates and remove <BLANK> tokens for CTC decoding.
-    Operates directly on integer token indices.
-    """
     decoded = []
     prev_token = None
     for token in token_list:
@@ -292,7 +270,7 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
 
         test_loader = DataLoader(
             test_split,
-            batch_size=1,
+            batch_size=batch_size,
             shuffle=False,
             collate_fn=collate_fn
         )
@@ -363,14 +341,6 @@ def evaluate_models(model_class, test_split, model_folder, device, vocab, batch_
     }
 
 def save_normalized_images(dataset, output_path, num_images=50):
-    """
-    Saves `num_images` normalized images from a PyTorch dataset to disk.
-
-    Args:
-        dataset (Dataset): Your instance of MusicScoreDataset.
-        output_path (str or Path): Directory to save the images.
-        num_images (int): Number of images to save.
-    """
     output_path = Path(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -423,30 +393,26 @@ if __name__ == "__main__":
         generator=torch.Generator().manual_seed(42) 
     )
 
-
     train_loader = DataLoader(
         train_split,
         batch_size=16,
         shuffle=True,
-        collate_fn=collate_fn
+        collate_fn=collate_fn,
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True
     )
 
-    val_loader = DataLoader(
-        val_split,
-        batch_size=16,
-        shuffle=True,
-        collate_fn=collate_fn
-    )
     print(f"Test samples: {len(test_split)}")
     print(f"Training samples: {len(train_split)}")
     print(f"Validation samples: {len(val_split)}")
     print(f"Vocabulary size: {len(vocab)}")
 
-    device = torch.device("cpu")
+    device = torch.device("cuda")
     print(f"Using device: {device}")
 
     model = CRNN(vocab_size=len(vocab) + 1)
-    train_model(model, train_loader, val_loader, num_epochs=70, device=device)
+    train_model(model, train_loader, num_epochs=70, device=device)
 
     model_folder = "/Users/leosvjetlicic/Desktop/Diplomski/models"
 
