@@ -224,18 +224,23 @@ def train_model(model, train_loader, num_epochs=30, device="cpu"):
     optimizer = torch.optim.Adadelta(model.parameters(),lr=1)
     train_losses = []
 
+    scaler = torch.amp.GradScaler(device="cuda")
     for epoch in range(num_epochs):
         model.train()
         train_loss = 0
         for images, labels, label_lengths in train_loader:
             images, labels, label_lengths = images.to(device), labels.to(device), label_lengths.to(device)
             optimizer.zero_grad()
-            outputs = model(images) 
-            outputs = outputs.log_softmax(2)
-            input_lengths = torch.full((images.size(0)), outputs.size(1), dtype=torch.long).to(device)
-            loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
-            loss.backward()
-            optimizer.step()
+            with torch.amp.autocast(device_type="cuda"):
+                outputs = model(images) 
+                outputs = outputs.log_softmax(2)
+                input_lengths = torch.full((images.size(0)), outputs.size(1), dtype=torch.long).to(device)
+                loss = criterion(outputs.permute(1, 0, 2), labels, input_lengths, label_lengths)
+                loss.backward()
+            # backward pass with scaler
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
             train_loss += loss.item()
 
         avg_train_loss = train_loss / len(train_loader)
@@ -398,7 +403,7 @@ if __name__ == "__main__":
         batch_size=16,
         shuffle=True,
         collate_fn=collate_fn,
-        num_workers=4,
+        num_workers=8,
         pin_memory=True,
         persistent_workers=True
     )
